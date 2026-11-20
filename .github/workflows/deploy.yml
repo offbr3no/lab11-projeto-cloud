@@ -17,7 +17,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "index.html,Dockerfile"
+          source: "."
           target: "/home/ubuntu/app"
 
       - name: Construir e rodar container Docker na EC2
@@ -28,6 +28,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/app
+            # Encontra a pasta onde está o Dockerfile caso tenha sido enviado em subpasta
+            DIR=$(dirname $(find . -name "Dockerfile*" | head -n 1))
+            cd "$DIR"
+            # Garante que o arquivo se chame exatamente Dockerfile (sem .txt)
+            [ -f Dockerfile.txt ] && mv Dockerfile.txt Dockerfile
             docker stop onepage-container || true
             docker rm onepage-container || true
             docker build -t onepage-img .
