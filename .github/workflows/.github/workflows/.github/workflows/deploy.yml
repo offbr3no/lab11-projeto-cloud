@@ -1,0 +1,34 @@
+name: Deploy One-Page com Docker na EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar codigo do repositorio
+        uses: actions/checkout@v4
+
+      - name: Copiar arquivos para a EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "index.html,Dockerfile"
+          target: "/home/ubuntu/app"
+
+      - name: Construir e rodar container Docker na EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/app
+            docker stop onepage-container || true
+            docker rm onepage-container || true
+            docker build -t onepage-img .
+            docker run -d --name onepage-container -p 80:80 onepage-img
